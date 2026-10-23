@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EGCC Management System</title>
+    
+    <!-- PWA Mobile Config -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <style>
+        :root {
+            --bg-main: #0d1117;
+            --bg-card: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-bright: #f0f6fc;
+            --accent-primary: #38bdf8;
+            --accent-admin: #f43f5e;
+            --accent-viewer: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Navigation & Status Bar */
+        .app-bar {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: calc(15px + env(safe-area-inset-top));
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            color: var(--text-bright);
+        }
+
+        .role-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .role-admin { background: rgba(244, 63, 94, 0.15); color: var(--accent-admin); border: 1px solid var(--accent-admin); }
+        .role-viewer { background: rgba(16, 185, 129, 0.15); color: var(--accent-viewer); border: 1px solid var(--accent-viewer); }
+
+        /* Main Workspace App Layout */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar for Navigation (Responsive for Mobile Swipe/Toggles) */
+        .sidebar {
+            width: 260_px;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.03);
+            color: var(--text-bright);
+            border-left-color: var(--accent-primary);
+        }
+
+        /* Content Render Area */
+        .stage {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background-color: var(--bg-main);
+        }
+
+        .view-panel { display: none; }
+        .view-panel.active { display: block; }
+
+        /* General Functional UI Elements */
+        h2 { color: var(--text-bright); margin-bottom: 16px; font-size: 1.4rem; }
+        .empty-state {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #8b949e;
+            margin-top: 15px;
+        }
+
+        .btn {
+            background: var(--accent-primary);
+            color: #000;
+            border: none;
+            padding: 10px 18px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-admin { background: var(--accent-admin); color: #fff; }
+
+        /* Mobile Optimization overrides */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; height: 60px; flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .nav-item { padding: 0 15px; display: flex; align-items: center; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-item.active { border-left-color: transparent; border-bottom-color: var(--accent-primary); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <div class="app-bar">
+        <div class="brand">EGCC SYSTEM</div>
+        <div id="roleBadge" class="role-badge role-viewer" onclick="toggleSecurityRole()">Viewer Mode</div>
+    </div>
+
+    <div class="main-container">
+        <!-- Navigation Hub items mirroring prompt constraints -->
+        <div class="sidebar">
+            <div class="nav-item active" onclick="switchView('overview')">Overview</div>
+            <div class="nav-item" onclick="switchView('players')">Players</div>
+            <div class="nav-item" onclick="switchView('teams')">Teams & Squads</div>
+            <div class="nav-item" onclick="switchView('competitions')">Competitions</div>
+            <div class="nav-item" onclick="switchView('fixtures')">Fixtures</div>
+            <div class="nav-item" onclick="switchView('scorecards')">Scorecards</div>
+            <div class="nav-item" onclick="switchView('statistics')">Statistics</div>
+            <div class="nav-item" onclick="switchView('auctions')">Auctions & Budgets</div>
+            <div class="nav-item" onclick="switchView('governance')">Governance</div>
+            <div class="nav-item" onclick="switchView('administration')">Admin Portal</div>
+        </div>
+
+        <!-- Render Stage -->
+        <div class="stage">
+            
+            <!-- Overview Dashboard -->
+            <div id="view-overview" class="view-panel active">
+                <h2>Overview Dashboard</h2>
+                <div class="empty-state">
+                    <p>Database is empty. No dynamic matches, auctions, or historical rosters recorded yet.</p>
+                </div>
+            </div>
+
+            <!-- Players View -->
+            <div id="view-players" class="view-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>Player Registry</h2>
+                    <button class="btn btn-admin admin-only" style="display:none;" onclick="alert('Launch Player Registry Wizard')">Add New Player</button>
+                </div>
+                <div class="empty-state">No players registered in the local data index.</div>
+            </div>
+
+            <!-- Teams View -->
+            <div id="view-teams" class="view-panel">
+                <h2>Teams & Squads</h2>
+                <div class="empty-state">No official franchise or club squads provisioned for the current sequence.</div>
+            </div>
+
+            <!-- Competitions View -->
+            <div id="view-competitions" class="view-panel">
+                <h2>Dynamic Competitions</h2>
+                <div class="empty-state">No dynamic tournament profiles found. Configuration engine operational.</div>
+            </div>
+
+            <!-- Remaining structural views lazy-load clean empty data architecture safely -->
+            <div id="view-fixtures" class="view-panel"><div class="empty-state">Fixtures & Scheduling Index Empty</div></div>
+            <div id="view-scorecards" class="view-panel"><div class="empty-state">Scorecards Ledger Empty</div></div>
+            <div id="view-statistics" class="view-panel"><div class="empty-state">Calculated Career Engines Empty</div></div>
+            <div id="view-auctions" class="view-panel"><div class="empty-state">Auction Transaction Registry Empty</div></div>
+            <div id="view-governance" class="view-panel"><div class="empty-state">Constitutional Rule Editions & Governance Records</div></div>
+            <div id="view-administration" class="view-panel"><div class="empty-state">System Identity Management & RLS Controls</div></div>
+
+        </div>
+    </div>
+
+    <script>
+        // Core State Engine
+        let currentRole = 'viewer';
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            
+            const targetPanel = document.getElementById(`view-${viewId}`);
+            if(targetPanel) targetPanel.classList.add('active');
+            
+            event.currentTarget.classList.add('active');
+        }
+
+        // Functional security role authorization simulation
+        function toggleSecurityRole() {
+            const badge = document.getElementById('roleBadge');
+            const adminButtons = document.querySelectorAll('.admin-only');
+            
+            if (currentRole === 'viewer') {
+                currentRole = 'admin';
+                badge.innerText = "Admin Mode";
+                badge.className = "role-badge role-admin";
+                adminButtons.forEach(b => b.style.display = 'block');
+            } else {
+                currentRole = 'viewer';
+                badge.innerText = "Viewer Mode";
+                badge.className = "role-badge role-viewer";
+                adminButtons.forEach(b => b.style.display = 'none');
+            }
+        }
+    </script>
+</body>
+</html>
